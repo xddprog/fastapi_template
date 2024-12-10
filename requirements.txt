@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy
+greenlet
+aiobotocore
+pyJWT
+redis
+asyncpg
+bcrypt
+passlib
