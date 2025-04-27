@@ -1,0 +1,101 @@
+version: '3.0'
+
+
+services:
+  db:
+    image: postgres:15
+    container_name: db-store
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d postgres -U postgres -h 127.0.0.1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend-store
+    ports:
+      - "5173:80"
+    depends_on:
+      - app 
+    restart: always
+    networks:
+      - app-network
+      
+  redis:
+    image: redis:7
+    container_name: redis-store
+    networks:
+      - app-network
+
+  rabbitmq:
+    image: rabbitmq:3.10.7-management
+    container_name: rabbitmq-store
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  nginx:
+    image: nginx:latest
+    container_name: nginx-proxy
+    volumes:
+      - /etc/nginx/sites-available/fasttaski.ru:/etc/nginx/conf.d/fasttaski.conf
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - app
+    networks:
+      - app-network
+      
+  app:
+    build:
+      context: ./backend
+    container_name: app-store
+    environment:
+      - DB_NAME=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - JWT_SECRET=0d0aa6d8d29b4293480f141e53ea0a81cca549eaad7f51d4bab5fdb4a1a3dc94
+      - JWT_ALGORITHM=HS256
+      - JWT_ACCESS_TOKEN_TIME=10000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - 8000:8000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - app-network
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+    restart: always
+
+
+networks:
+  app-network:
+    driver: bridge
