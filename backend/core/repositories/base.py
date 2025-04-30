@@ -1,13 +1,10 @@
-from typing import Any
-from pydantic import UUID4
 from sqlalchemy import Result, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import MappedColumn
 from backend.infrastructure.interfaces.repository import RepositoryInterface
 
 
 class SqlAlchemyRepository[ModelType](RepositoryInterface[ModelType]):
-    def __init__(self, session: AsyncSession, model: type[ModelType]):
+    def __init__(self, session: AsyncSession, model: ModelType):
         self.session = session
         self.model = model
 
@@ -48,9 +45,6 @@ class SqlAlchemyRepository[ModelType](RepositoryInterface[ModelType]):
         item = item.scalars().all()[0]
         await self.session.refresh(item)
         return item
-
-    async def get_model(self, **kwargs: int) -> ModelType:
-        return self.model(**kwargs)
 
     async def refresh_item(self, item: ModelType):
         return await self.session.refresh(item)

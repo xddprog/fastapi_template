@@ -1,6 +1,5 @@
 from pydantic import BaseModel, EmailStr
 
-from backend.utils.enums import AuthServices
 
 
 class RegisterForm(BaseModel):
